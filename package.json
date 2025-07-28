@@ -1,0 +1,22 @@
+{
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.15.1",
+    "@types/node": "^24.0.14",
+    "dotenv": "^17.2.0",
+    "mysql2": "^3.14.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "type": "module"
+  },
+  "name": "pfa_my_project",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "ts-node src/index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
