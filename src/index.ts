@@ -1,12 +1,41 @@
-// in your MySQL_MCP_Server/src/index.ts
+#!/usr/bin/env node
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import mysql from "mysql2/promise";
 import { z } from "zod";
 import dotenv from "dotenv";
+import os from "os";     // <-- ADD THIS
+import path from "path";   // <-- ADD THIS
+import fs from "fs";     // <-- ADD THIS
 
-dotenv.config();
+// --- Configuration Loading ---
+// Define the path for the user's configuration file.
+const userConfigDir = path.join(os.homedir(), ".mysql-mcp-server");
+const userConfigFile = path.join(userConfigDir, "config.env");
+
+// Check if the user has created the configuration file.
+if (fs.existsSync(userConfigFile)) {
+  // If it exists, load it.
+  dotenv.config({ path: userConfigFile });
+  console.error(`Loaded configuration from ${userConfigFile}`);
+} else {
+  // If not, fail gracefully and tell the user exactly what to do.
+  console.error(`
+    ERROR: Configuration file not found.
+    Please create a configuration file at:
+    ${userConfigFile}
+    
+    With the following content:
+    DB_HOST=your_host
+    DB_USER=your_user
+    DB_PASSWORD=your_password
+    DB_NAME=your_database
+    DB_PORT=3306
+  `);
+  process.exit(1); // Exit with an error code.
+}
+
 
 // --- Connection Pool (Excellent for performance) ---
 const pool = mysql.createPool({

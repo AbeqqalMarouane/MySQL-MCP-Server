@@ -1,26 +1,21 @@
 # General-Purpose MySQL MCP Server
 
-  [![TypeScript](https://img.shields.io/badge/TypeScript-black?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-  [![Node.js](https://img.shields.io/badge/Node.js-black?style=for-the-badge&logo=nodedotjs&logoColor=339933)](https://nodejs.org/)
-  [![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-blue?style=for-the-badge)](https://modelcontextprotocol.io/)
-  [![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
-
-  This repository contains a general-purpose, secure, and efficient **Model Context Protocol (MCP)** server for MySQL databases. It acts as a secure bridge, allowing AI agents and applications (MCP Clients) to interact with any MySQL database without needing direct credentials.
-
-  This server is designed to be a standalone, reusable component. It was originally developed for the [EventScribe AI](https://github.com/AbeqqalMarouane/PromptEnhancing_UsingMCP) project but can be used by any MCP-compatible client.
-
-  ## ✨ Key Features
-
-  - **High Performance**: Uses a MySQL connection pool for efficient, high-concurrency database interactions suitable for production environments.
-  - **Database Agnostic**: While using the `mysql2` driver, the server's logic and configuration via environment variables allow it to connect to any MySQL-compatible database (local, cloud-based, or containerized).
-  - **Graceful Shutdown**: Includes logic to cleanly close database connections when the server process is terminated.
-
-  ## 🏗️ Architecture: The Server's Role
-
-  This MCP server is the "Data Layer" in a modern agentic architecture. The client (e.g., a Next.js application) orchestrates the workflow, while this server is the only component with direct access to the database.
-
-  ```mermaid
-graph TD
+[![npm version](https://img.shields.io/npm/v/@abeqqal_marouane/mysql-mcp-server.svg?style=for-the-badge)](https://www.npmjs.copackage/@abeqqal_marouane/mysql-mcp-server)
+[![TypeScript](https://img.shields.io/badge/TypeScript-black?style=for-the-badge&logo=typescript&logoColor=white)](https://wwtypescriptlang.org/)
+[![MCP](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-blue?style=for-the-badge)](https://modelcontextprotocol.io/)
+[![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/
+This repository contains a general-purpose, secure, and efficient **Model Context Protocol (MCP)** server for MySQL databases. Iacts as a secure bridge, allowing AI agents and applications (MCP Clients) to interact with any MySQL database without needindirect credentials
+This server is designed to be a standalone, reusable npm package. It was originally developed for the [EventScribe AI](https:github.com/AbeqqalMarouane/PromptEnhancing_UsingMCP) project but can be used by any MCP-compatible client
+## ✨ Key Feature
+- **Dynamic Schema Discovery**: Exposes the full database schema as an MCP `resource`, allowing AI agents to understand thstructure of any database it connects to.
+- **Secure Read-Only Querying**: Provides a `read_only_query` MCP `tool` that strictly enforces `SELECT` statements, preventinany destructive operations and protecting your data.
+- **High Performance**: Uses a MySQL connection pool for efficient, high-concurrency database interactions suitable foproduction environments.
+- **Simple Configuration**: Uses a clean `.env` file in the user's home directory, keeping credentials secure and separate froclient applications.
+- **Graceful Shutdown**: Includes logic to cleanly close database connections when the server process is terminated
+## 🏗️ Architecture: The Server's Rol
+This MCP server is the "Data Layer" in a modern agentic architecture. The client (e.g., a Next.js application) orchestrates thworkflow, while this server is the only component with direct access to the database
+```mermaid
+  graph TD
     subgraph "Client's Responsibility (e.g., EventScribe AI)"
         A["Client Application"]
         A -- "Starts & Manages Process" --> B
@@ -39,94 +34,91 @@ graph TD
     B -- "Returns Schema as Resource" --> A
     B -- "Returns Query Data as Tool Result" --> A
 ```
-
-  ## 🚀 Getting Started
-
-  ### Prerequisites
-  - Node.js 18+
-  - A running MySQL 8.0+ database instance.
-
-  ### Installation & Setup
-
-  1. Clone the repository:
-  ```bash
-  git clone https://github.com/AbeqqalMarouane/MySQL-MCP-Server.git
-  cd MySQL-MCP-Server
-  ```
-
-  2. Install dependencies:
-  ```bash
-  npm install
-  ```
-
-  3. Set up environment variables:
-     - Create a `.env` file in the root of the project:
-  
-     - Then, edit the `.env` file with your database credentials:
-  ```env
-  # In MySQL-MCP-Server/.env
-  DB_HOST=localhost
-  DB_USER=root
-  DB_PASSWORD=your_mysql_password
-  DB_NAME=your_database_name
-  DB_PORT=3306
-  ```
-
-  4. Build the TypeScript code:
-  ```bash
-  npm run build
-  ```
-  This compiles the `src/index.ts` file into a runnable JavaScript file in the `build/` directory.
-
-  ## 🛠️ Usage
-
-  This server is designed to be launched and controlled by an MCP client.
-
-  ### 1. Testing with MCP Inspector
-  The easiest way to test the server is with the official MCP Inspector tool. From the project's root directory, run:
-  ```bash
-  npx -- @modelcontextprotocol/inspector npm start
-  ```
-  This will launch the Inspector UI in your browser, where you can directly interact with the server's resources and tools.
-
-  ### 2. Integrating with a Programmatic Client
-  To use this server in your own application (like a Next.js API route), configure your client's `StdioClientTransport` to run the server's `npm start` command.
-
-  Example Client Configuration:
-  ```javascript
-  // In your client application code
-  const transport = new StdioClientTransport({
-    command: "npm",
-    args: ["start"],
-    cwd: "/path/to/your/MySQL-MCP-Server" // Absolute path to this project
-  });
-  ```
-
-  ## 📖 Exposed MCP Capabilities
-
-  This server exposes two primary capabilities to any connected client.
-
-  ### Resource: schema
-  - **URI**: `mysql://schemas`
-  - **Description**: Returns the full `CREATE TABLE` SQL statements for all tables in the connected database. This allows an AI agent to learn the complete structure of the database.
-  - **Usage (in a client)**: `mcpClient.readResource({ uri: "mysql://schemas" })`
-
-  ### Tool: read_only_query
-  - **Name**: `read_only_query`
-  - **Description**: Executes a SQL query against the database.
-  - **Input Schema**: `{ sql: string }`
-  - **Security**: The tool contains a vital security check. It will only execute queries that begin with `SELECT`. Any other command (`UPDATE`, `DELETE`, `INSERT`, `DROP`, etc.) will be rejected with an error.
-  - **Usage (in a client)**: `mcpClient.callTool({ name: "read_only_query", arguments: { sql: "SELECT * FROM events LIMIT 10" } })`
-
-  ## 🤝 Contributing
-
-  Contributions are welcome! If you have ideas for improvements or find a bug, please feel free to:
-  - Fork the repository.
-  - Create a new feature branch (`git checkout -b feature/your-amazing-feature`).
-  - Make your changes.
-  - Submit a pull request with a clear description of your changes.
-
-  ## 📄 License
-
-  This project is licensed under the MIT License.
+## 🚀 Installation & Usage Guide for Users
+This guide explains how to install and use the server as an npm package. For instructions on how to contribute to the code, sethe "For Developers" section below
+### Step 1: Installation
+In your client project (e.g., your Next.js app), install the package from npm
+```bash
+npm install @abeqqal_marouane/mysql-mcp-server
 ```
+### Step 2: Configuration for Users
+This server requires a configuration file to securely connect to your database
+Create a dedicated folder in your user home directory
+- On Windows (PowerShell): `mkdir ~/.mysql-mcp-server`
+- On macOS/Linux (Terminal): `mkdir -p ~/.mysql-mcp-server
+Create the configuration file. Inside that new folder, create a file named `config.env`
+Add your database credentials to the `config.env` file with the following format
+```env
+# ~/.mysql-mcp-server/config.en
+DB_HOST=localhost
+DB_USER=your_mysql_user
+DB_PASSWORD=your_mysql_password
+DB_NAME=your_database_name
+DB_PORT=3306
+```
+The server will automatically find and load this file every time it starts
+### Step 3: Usage
+This server is designed to be launched and controlled by an MCP client
+#### In an MCP Client Application (e.g., Next.js)
+Configure your client's `StdioClientTransport` to use the command provided by this package. Note that you no longer need filpaths or `npm start`
+```javascript
+// In your client application code
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
+const transport = new StdioClientTransport({
+  command: "mysql-mcp-server",
+  args: []
+})
+// ... then connect your MCP client to this transport.
+```
+#### For Quick Testing with MCP Inspector
+You can test the server directly from your terminal, without needing to clone the repository
+First, install the package globally to make the command available everywhere
+```bash
+npm install -g @abeqqal_marouane/mysql-mcp-server
+```
+Make sure you have created the `config.env` file as described in the "Configuration" step above
+Run the server with the Inspector
+```bash
+npx -- @modelcontextprotocol/inspector mysql-mcp-server
+```
+## 📖 Exposed MCP Capabilities
+This server exposes two primary capabilities to any connected client
+### Resource: schema
+- **URI**: `mysql://schemas`
+- **Description**: Returns the full `CREATE TABLE` SQL statements for all tables in the connected database. This allows an Aagent to learn the complete structure of the database.
+- **Usage (in a client)**
+```typescript
+mcpClient.readResource({ uri: "mysql://schemas" })
+```
+### Tool: read_only_query
+- **Name**: `read_only_query`
+- **Description**: Executes a SQL query against the database.
+- **Input Schema**: `{ sql: string }`
+- **Security**: The tool contains a vital security check. It will only execute queries that begin with `SELECT`. Any othecommand (UPDATE, DELETE, INSERT, DROP, etc.) will be rejected with an error.
+- **Usage (in a client)**
+```typescript
+mcpClient.callTool({
+  name: "read_only_query",
+  arguments: { sql: "SELECT * FROM events LIMIT 10" }
+});
+```
+## 👨‍💻 For Developers / Contributing
+If you want to modify or contribute to this server, follow these steps
+### Clone the repository
+```bash
+git clone https://github.com/AbeqqalMarouane/MySQL-MCP-Server.git
+cd MySQL-MCP-Server
+```
+### Install dependencies
+```bash
+npm install
+```
+### Create a local `.env` file for development
+As described in the Configuration section
+### Build the TypeScript code
+```bash
+npm run build
+```
+Contributions are welcome! Please feel free to fork the repository, make your changes, and submit a pull request
+## 📄 License
+This project is licensed under the MIT License.

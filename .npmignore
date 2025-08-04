@@ -1,0 +1,10 @@
+# Ignore source code and development files
+src/
+node_modules/
+tsconfig.json
+.env*
+*.log
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db

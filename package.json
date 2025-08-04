@@ -1,22 +1,50 @@
 {
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.15.1",
-    "@types/node": "^24.0.14",
-    "dotenv": "^17.2.0",
-    "mysql2": "^3.14.2",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3",
-    "type": "module"
+  "name": "@abeqqal_marouane/mysql-mcp-server",
+  "version": "1.0.1",
+  "description": "A general-purpose, secure Model Context Protocol (MCP) server for MySQL databases.",
+  "main": "build/index.js",
+  "bin": {
+    "mysql-mcp-server": "build/index.js"
   },
-  "name": "pfa_my_project",
-  "version": "1.0.0",
-  "main": "index.js",
+  "files": [
+    "build",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsc",
-    "start": "ts-node src/index.ts"
+    "start": "node build/index.js",
+    "prepublishOnly": "npm run build"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": ""
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AbeqqalMarouane/MySQL-MCP-Server.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "mysql",
+    "ai",
+    "agent",
+    "llm",
+    "eventscribe"
+  ],
+  "author": "Marouane Abeqqal",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AbeqqalMarouane/MySQL-MCP-Server/issues"
+  },
+  "homepage": "https://github.com/AbeqqalMarouane/MySQL-MCP-Server#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.15.1",
+    "dotenv": "^16.4.5",
+    "mysql2": "^3.10.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.9",
+    "typescript": "^5.5.2"
+  }
 }
