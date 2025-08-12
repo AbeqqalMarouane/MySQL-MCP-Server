@@ -7,9 +7,9 @@
 This repository contains a general-purpose, secure, and efficient **Model Context Protocol (MCP)** server for MySQL databases. Iacts as a secure bridge, allowing AI agents and applications (MCP Clients) to interact with any MySQL database without needindirect credentials
 This server is designed to be a standalone, reusable npm package. It was originally developed for the [EventScribe AI](https:github.com/AbeqqalMarouane/PromptEnhancing_UsingMCP) project but can be used by any MCP-compatible client
 ## ✨ Key Feature
-- **Dynamic Schema Discovery**: Exposes the full database schema as an MCP `resource`, allowing AI agents to understand thstructure of any database it connects to.
+- **Dynamic Schema Discovery**: Exposes the full database schema as an MCP `resource`, allowing AI agents to understand the structure of any database it connects to.
 - **Secure Read-Only Querying**: Provides a `read_only_query` MCP `tool` that strictly enforces `SELECT` statements, preventinany destructive operations and protecting your data.
-- **High Performance**: Uses a MySQL connection pool for efficient, high-concurrency database interactions suitable foproduction environments.
+- **High Performance**: Uses a MySQL connection pool for efficient, high-concurrency database interactions suitable for production environments.
 - **Simple Configuration**: Uses a clean `.env` file in the user's home directory, keeping credentials secure and separate froclient applications.
 - **Graceful Shutdown**: Includes logic to cleanly close database connections when the server process is terminated
 ## 🏗️ Architecture: The Server's Rol
@@ -35,7 +35,7 @@ This MCP server is the "Data Layer" in a modern agentic architecture. The client
     B -- "Returns Query Data as Tool Result" --> A
 ```
 ## 🚀 Installation & Usage Guide for Users
-This guide explains how to install and use the server as an npm package. For instructions on how to contribute to the code, sethe "For Developers" section below
+This guide explains how to install and use the server as an npm package. For instructions on how to contribute to the code, see the "For Developers" section below
 ### Step 1: Installation
 In your client project (e.g., your Next.js app), install the package from npm
 ```bash
@@ -94,7 +94,7 @@ mcpClient.readResource({ uri: "mysql://schemas" })
 - **Name**: `read_only_query`
 - **Description**: Executes a SQL query against the database.
 - **Input Schema**: `{ sql: string }`
-- **Security**: The tool contains a vital security check. It will only execute queries that begin with `SELECT`. Any othecommand (UPDATE, DELETE, INSERT, DROP, etc.) will be rejected with an error.
+- **Security**: The tool contains a vital security check. It will only execute queries that begin with `SELECT`. Any other command (UPDATE, DELETE, INSERT, DROP, etc.) will be rejected with an error.
 - **Usage (in a client)**
 ```typescript
 mcpClient.callTool({
