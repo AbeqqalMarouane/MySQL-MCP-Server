@@ -5,9 +5,9 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import mysql from "mysql2/promise";
 import { z } from "zod";
 import dotenv from "dotenv";
-import os from "os";     // <-- ADD THIS
-import path from "path";   // <-- ADD THIS
-import fs from "fs";     // <-- ADD THIS
+import os from "os";
+import path from "path";
+import fs from "fs";
 
 // --- Configuration Loading ---
 // Define the path for the user's configuration file.
