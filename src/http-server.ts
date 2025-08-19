@@ -1,7 +1,6 @@
 // in MySQL-MCP-Server/src/http-server.ts
 
 // --- Imports ---
-// We import all necessary libraries for the server.
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import mysql from "mysql2/promise";
@@ -12,14 +11,13 @@ import cors from "cors";
 import { randomUUID } from "crypto";
 
 // --- Main Application Logic in an Async IIFE ---
-// This structure is a robust way to initialize and run an async server,
-// ensuring the process stays alive and handles errors correctly.
+// This structure ensures all setup is completed before the server starts listening.
 (async () => {
   try {
     // Load environment variables at the very beginning.
     dotenv.config();
 
-    // --- Database Connection Pool ---
+    // --- Create ONE Database Connection Pool for the whole application ---
     const pool = mysql.createPool({
       host: process.env.DB_HOST,
       port: Number(process.env.DB_PORT) || 3306,
@@ -36,13 +34,15 @@ import { randomUUID } from "crypto";
     console.error("✅ Database connection successful.");
     connection.release();
 
-    // --- MCP Server Setup ---
+    // --- Create ONE McpServer instance for the whole application ---
     const server = new McpServer({
       name: "mysql-gateway-server",
       version: "1.1.0",
     });
 
-    // --- MCP Resource: Expose the full schema of ANY database ---
+    // --- Register all resources and tools on this single server instance ---
+
+    // MCP Resource: Expose the full schema of ANY database
     server.registerResource(
       "schema",
       "mysql://schemas",
@@ -76,7 +76,7 @@ import { randomUUID } from "crypto";
       }
     );
 
-    // --- MCP Tool: A general-purpose, secure query tool ---
+    // MCP Tool: A general-purpose, secure query tool
     server.registerTool(
       "read_only_query",
       {
@@ -87,17 +87,12 @@ import { randomUUID } from "crypto";
         },
       },
       async ({ sql }) => {
-        // Security Check: Vital to prevent destructive actions
         if (!sql.trim().toLowerCase().startsWith("select")) {
           return {
-            content: [{
-              type: "text",
-              text: "Error: Only SELECT queries are permitted for security reasons.",
-            }],
+            content: [{ type: "text", text: "Error: Only SELECT queries are permitted." }],
             isError: true,
           };
         }
-
         let conn;
         try {
           conn = await pool.getConnection();
@@ -108,10 +103,7 @@ import { randomUUID } from "crypto";
         } catch (error: any) {
           console.error("Database query failed:", error.message);
           return {
-            content: [{
-              type: "text",
-              text: `Database query failed: ${error.message}`
-            }],
+            content: [{ type: "text", text: `Database query failed: ${error.message}` }],
             isError: true,
           };
         } finally {
@@ -122,13 +114,12 @@ import { randomUUID } from "crypto";
 
     // --- Web Server Setup ---
     const app = express();
-    // Correctly parse the port from environment variables as a number.
     const port = Number(process.env.PORT) || 8080;
 
     app.use(cors());
     app.use(express.json());
 
-    // Correctly instantiate the transport with required options.
+    // --- Create ONE Transport instance for the whole application ---
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
       onsessioninitialized: (sessionId) => {
@@ -136,15 +127,20 @@ import { randomUUID } from "crypto";
       },
     });
     
+    // Connect the single server to the single transport
     await server.connect(transport);
 
-    // A single endpoint at /mcp to handle all incoming MCP requests.
+    // --- API Endpoints ---
+    // The /mcp endpoint now simply passes all requests to the single, persistent transport instance.
     app.all('/mcp', (req, res) => {
       transport.handleRequest(req, res, req.body);
     });
 
-    // --- Server Listener Block (This is the final, robust version) ---
-    // This starts the server and ensures the process stays alive.
+    app.get('/', (req, res) => {
+        res.status(200).send("MySQL MCP Server is running. The MCP endpoint is at /mcp.");
+    });
+
+    // --- Start the Server ---
     const httpServer = app.listen(port, '0.0.0.0', () => {
       console.error(`✅ MySQL Gateway MCP Server running on HTTP, listening on port ${port}`);
       console.error(`   - Local:            http://localhost:${port}/mcp`);
@@ -152,7 +148,6 @@ import { randomUUID } from "crypto";
     });
 
     // --- Graceful Shutdown Logic ---
-    // This listener ensures the database pool is closed cleanly when you stop the server.
     const signals = ["SIGINT", "SIGTERM", "SIGQUIT"];
     signals.forEach((signal) => {
       process.on(signal, () => {
@@ -169,4 +164,4 @@ import { randomUUID } from "crypto";
     console.error("❌ Fatal error during server startup:", error);
     process.exit(1);
   }
-})(); // The () here immediately invokes the function, starting the server.
+})();
