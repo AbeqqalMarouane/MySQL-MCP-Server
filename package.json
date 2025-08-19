@@ -42,6 +42,7 @@
     "@modelcontextprotocol/sdk": "^1.15.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
+    "eventsource-parser": "^3.0.5",
     "express": "^5.1.0",
     "mysql2": "^3.10.1",
     "zod": "^3.23.8"
