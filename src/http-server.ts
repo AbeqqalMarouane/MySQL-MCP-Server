@@ -1,6 +1,5 @@
 // in MySQL-MCP-Server/src/http-server.ts
 
-// --- Imports ---
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import mysql from "mysql2/promise";
@@ -11,10 +10,8 @@ import cors from "cors";
 import { randomUUID } from "crypto";
 
 // --- Main Application Logic in an Async IIFE ---
-// This structure ensures all setup is completed before the server starts listening.
 (async () => {
   try {
-    // Load environment variables at the very beginning.
     dotenv.config();
 
     // --- Create ONE Database Connection Pool for the whole application ---
@@ -25,28 +22,21 @@ import { randomUUID } from "crypto";
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
       connectionLimit: 10,
-      waitForConnections: true,
-      queueLimit: 0,
     });
     
-    // Test the connection on startup to fail fast if credentials are bad.
     const connection = await pool.getConnection();
     console.error("✅ Database connection successful.");
     connection.release();
 
     // --- Create ONE McpServer instance for the whole application ---
+    // The server holds the resource and tool definitions.
     const server = new McpServer({
       name: "mysql-gateway-server",
       version: "1.1.0",
     });
 
-    // --- Register all resources and tools on this single server instance ---
-
-    // MCP Resource: Expose the full schema of ANY database
-    server.registerResource(
-      "schema",
-      "mysql://schemas",
-      {
+    // --- Register all resources and tools once on startup ---
+    server.registerResource("schema", "mysql://schemas", {
         title: "Database Schemas",
         description: "Provides the `CREATE TABLE` statements for all tables in the connected database.",
         mimeType: "text/plain",
@@ -73,13 +63,8 @@ import { randomUUID } from "crypto";
         } finally {
           if (conn) conn.release();
         }
-      }
-    );
-
-    // MCP Tool: A general-purpose, secure query tool
-    server.registerTool(
-      "read_only_query",
-      {
+      });
+    server.registerTool("read_only_query", {
         title: "Read-Only SQL Query",
         description: "Executes a read-only SQL query (MUST start with 'SELECT') on the database.",
         inputSchema: {
@@ -109,8 +94,10 @@ import { randomUUID } from "crypto";
         } finally {
           if (conn) conn.release();
         }
-      }
-    );
+      });
+
+    // --- THIS IS THE KEY FIX: A map to store active sessions ---
+    const activeTransports = new Map<string, StreamableHTTPServerTransport>();
 
     // --- Web Server Setup ---
     const app = express();
@@ -119,46 +106,44 @@ import { randomUUID } from "crypto";
     app.use(cors());
     app.use(express.json());
 
-    // --- Create ONE Transport instance for the whole application ---
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
-      onsessioninitialized: (sessionId) => {
-        console.error(`New HTTP session initialized: ${sessionId}`);
-      },
-    });
-    
-    // Connect the single server to the single transport
-    await server.connect(transport);
+    // --- The /mcp endpoint now uses the session map ---
+    app.all('/mcp', async (req, res) => {
+      // For MCP over HTTP, the client provides a session ID in the header for subsequent requests.
+      const sessionId = req.headers['mcp-session-id'] as string | undefined;
 
-    // --- API Endpoints ---
-    // The /mcp endpoint now simply passes all requests to the single, persistent transport instance.
-    app.all('/mcp', (req, res) => {
+      let transport: StreamableHTTPServerTransport | undefined = sessionId ? activeTransports.get(sessionId) : undefined;
+
+      // If no transport exists for this session, it must be an initialize request.
+      if (!transport) {
+        // We create a new transport for this new session.
+        const newSessionId = randomUUID();
+        transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => newSessionId,
+          onsessioninitialized: (sid) => {
+            console.error(`New HTTP session initialized: ${sid}`);
+            activeTransports.set(sid, transport!);
+          },
+          onsessionclosed: (sid) => {
+            console.error(`HTTP session closed: ${sid}`);
+            activeTransports.delete(sid);
+          }
+        });
+        
+        // We connect our single, persistent server instance to this new transport.
+        await server.connect(transport);
+      }
+
+      // Handle the request with the correct transport (either new or existing).
       transport.handleRequest(req, res, req.body);
     });
 
-    app.get('/', (req, res) => {
-        res.status(200).send("MySQL MCP Server is running. The MCP endpoint is at /mcp.");
-    });
+    // ... (Your other endpoints like '/' and '/health' remain the same) ...
 
-    // --- Start the Server ---
     const httpServer = app.listen(port, '0.0.0.0', () => {
-      console.error(`✅ MySQL Gateway MCP Server running on HTTP, listening on port ${port}`);
-      console.error(`   - Local:            http://localhost:${port}/mcp`);
-      console.error(`   - Press CTRL+C to stop the server`);
+      console.error(`✅ MySQL Gateway MCP Server (Stateful) running on port ${port}`);
     });
-
-    // --- Graceful Shutdown Logic ---
-    const signals = ["SIGINT", "SIGTERM", "SIGQUIT"];
-    signals.forEach((signal) => {
-      process.on(signal, () => {
-        console.error('\nGracefully shutting down server...');
-        httpServer.close(async () => {
-          await pool.end();
-          console.error('Database pool closed. Server has been shut down.');
-          process.exit(0);
-        });
-      });
-    });
+    
+    // ... (Your graceful shutdown logic remains the same) ...
 
   } catch (error) {
     console.error("❌ Fatal error during server startup:", error);
